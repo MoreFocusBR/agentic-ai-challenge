@@ -1,17 +1,20 @@
 import asyncio
+import io
 import json
 import os
 import re
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from langchain_core.messages import HumanMessage, AIMessage
 from pydantic import BaseModel, Field
+from pypdf import PdfReader
 
 from app.config import settings
 from app.security import verify_api_key, sanitize_input, sanitize_output
 from app.agents.graph import graph
 from app.memory.checkpointer import load_history, append_to_history
+from app.rag.ingestor import ingest_text
 from app.tools.pdf_generator import generate_pdf
 
 router = APIRouter()
@@ -146,6 +149,33 @@ async def chat_stream(req: ChatRequest):
 async def generate_pdf_endpoint(req: PdfRequest):
     filename = generate_pdf(req.title, req.content)
     return {"filename": filename, "pdf_url": f"/documents/{filename}"}
+
+
+@router.post("/ingest-pdf", dependencies=[Depends(verify_api_key)])
+async def ingest_pdf(
+    file: UploadFile = File(...),
+    section: str = Form(default="geral"),
+    source: str = Form(default=""),
+):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Envie um arquivo .pdf válido.")
+    if file.size and file.size > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Arquivo muito grande (limite: 20 MB).")
+
+    raw = await file.read()
+    try:
+        reader = PdfReader(io.BytesIO(raw))
+        pages_text = [page.extract_text() or "" for page in reader.pages]
+        full_text = "\n\n".join(p for p in pages_text if p.strip())
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Não foi possível ler o PDF: {exc}")
+
+    if not full_text.strip():
+        raise HTTPException(status_code=422, detail="O PDF não contém texto extraível (pode ser escaneado/imagem).")
+
+    src = source.strip() or os.path.splitext(file.filename)[0]
+    chunks = await ingest_text(full_text, source=src, section=section.strip() or "geral")
+    return {"chunks": chunks, "pages": len(reader.pages), "source": src, "section": section}
 
 
 @router.get("/documents/{arquivo}", dependencies=[Depends(verify_api_key)])

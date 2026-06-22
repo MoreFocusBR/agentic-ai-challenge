@@ -12,3 +12,4 @@ python-dotenv==1.2.2
 reportlab==5.0.0
 python-multipart==0.0.32
 aiofiles==25.1.0
+pypdf==5.6.0

@@ -13,6 +13,8 @@
       --primary-light: #2a5a8c;
       --accent:        #3b82f6;
       --n8n:           #ea580c;
+      --import:        #7c3aed;
+      --import-dark:   #6d28d9;
       --n8n-dark:      #c2410c;
       --n8n-light:     #fff7ed;
       --n8n-border:    #fed7aa;
@@ -440,6 +442,78 @@
     .modal-result.show { display: block; }
     .modal-result a { color: var(--success); font-weight: 600; }
 
+    /* ── Import PDF Modal ────────────────────────────────────── */
+    #import-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 200;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    #import-modal.open { display: flex; }
+
+    .import-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .import-drop-zone.drag-over,
+    .import-drop-zone:hover { border-color: var(--import); background: #f5f3ff; }
+    .import-drop-zone .drop-icon { font-size: 36px; margin-bottom: 8px; }
+    .import-drop-zone input[type="file"] { display: none; }
+
+    .import-file-info {
+      display: none; margin-top: 10px; padding: 8px 12px;
+      background: #f5f3ff; border: 1px solid #ddd6fe;
+      border-radius: var(--radius-sm); font-size: 12px;
+      color: var(--import); font-weight: 600;
+      align-items: center; gap: 6px;
+    }
+    .import-file-info.show { display: flex; }
+
+    .import-progress {
+      display: none; margin-top: 12px;
+    }
+    .import-progress.show { display: block; }
+    .progress-bar {
+      height: 6px; background: #e9d5ff; border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: var(--import);
+      border-radius: 3px;
+      animation: progressAnim 1.5s ease-in-out infinite;
+    }
+    @keyframes progressAnim {
+      0%   { width: 5%; }
+      50%  { width: 80%; }
+      100% { width: 95%; }
+    }
+    .progress-label { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    .import-result {
+      display: none; margin-top: 12px; padding: 12px;
+      border-radius: var(--radius-sm); font-size: 13px;
+    }
+    .import-result.show { display: block; }
+    .import-result.success { background: #f0fdf4; border: 1px solid #86efac; color: var(--success); }
+    .import-result.error   { background: #fef2f2; border: 1px solid #fecaca; color: var(--error); }
+
+    .btn-import {
+      background: var(--import); color: #fff; border: none;
+      border-radius: var(--radius-sm); padding: 8px 18px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background .15s;
+    }
+    .btn-import:hover:not(:disabled) { background: var(--import-dark); }
+    .btn-import:disabled { opacity: .6; cursor: not-allowed; }
+
+    .btn-icon.import-btn { background: rgba(124,58,237,.25); border-color: rgba(124,58,237,.4); }
+    .btn-icon.import-btn:hover { background: rgba(124,58,237,.38); }
+
     /* ── Scrollbar ────────────────────────────────────────────── */
     .chat-pane::-webkit-scrollbar { width: 6px; }
     .chat-pane::-webkit-scrollbar-track { background: transparent; }
@@ -463,6 +537,7 @@
     <span>Assistente Corporativo — Implanta</span>
   </div>
   <div class="header-actions">
+    <button class="btn-icon import-btn" id="import-pdf-btn">📎 Importar PDF</button>
     <button class="btn-icon" id="new-session-btn">↺ Nova sessão</button>
     <button class="btn-icon" id="settings-btn">⚙ Configurações</button>
   </div>
@@ -551,6 +626,46 @@
   </div>
 </div>
 
+<!-- ── Import PDF Modal ─────────────────────────────────────────── -->
+<div id="import-modal">
+  <div class="modal-card" style="max-width:520px">
+    <h3 style="color:var(--import)">📎 Importar PDF para base de conhecimento</h3>
+    <div class="modal-field">
+      <label>Arquivo PDF</label>
+      <div class="import-drop-zone" id="import-drop-zone">
+        <div class="drop-icon">📄</div>
+        <div>Arraste um PDF aqui ou <strong>clique para selecionar</strong></div>
+        <div style="font-size:11px;margin-top:4px;color:#94a3b8">Máximo 20 MB · somente .pdf</div>
+        <input type="file" id="import-file-input" accept=".pdf" />
+      </div>
+      <div class="import-file-info" id="import-file-info">
+        <span>📄</span>
+        <span id="import-file-name"></span>
+        <span id="import-file-size" style="font-weight:400;color:var(--muted)"></span>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Seção / categoria</label>
+      <input id="import-section" type="text" placeholder="Ex: CRM, Siscaf, Fiscal…" />
+    </div>
+    <div class="modal-field">
+      <label>Nome da fonte (opcional)</label>
+      <input id="import-source" type="text" placeholder="Deixe em branco para usar o nome do arquivo" />
+    </div>
+    <div class="import-progress" id="import-progress">
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <div class="progress-label">Extraindo texto e gerando embeddings…</div>
+    </div>
+    <div class="import-result" id="import-result"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="import-cancel-btn">Cancelar</button>
+      <button class="btn-import" id="import-send-btn" disabled>
+        <span id="import-btn-label">📤 Enviar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ── PDF Modal ───────────────────────────────────────────────── -->
 <div id="pdf-modal">
   <div class="modal-card">
@@ -590,7 +705,7 @@ const state = {
   sessionId:     '',
   lastBotText:   '',
   // N8N
-  n8nUrl:        'https://n8n-hml.portalpredial.com.br/webhook-test/chat',
+  n8nUrl:        'https://n8n-hml.portalpredial.com.br/webhook/chat',
   n8nSessionId:  '',
 };
 
@@ -994,6 +1109,99 @@ async function generatePdf() {
   }
 }
 
+/* ─── Import PDF Modal ──────────────────────────────────────────── */
+let importFile = null;
+
+function openImportModal() {
+  importFile = null;
+  document.getElementById('import-file-input').value = '';
+  document.getElementById('import-file-info').classList.remove('show');
+  document.getElementById('import-section').value = '';
+  document.getElementById('import-source').value = '';
+  document.getElementById('import-progress').classList.remove('show');
+  const res = document.getElementById('import-result');
+  res.className = 'import-result';
+  res.textContent = '';
+  document.getElementById('import-send-btn').disabled = true;
+  document.getElementById('import-btn-label').textContent = '📤 Enviar';
+  document.getElementById('import-modal').classList.add('open');
+}
+
+function closeImportModal() {
+  document.getElementById('import-modal').classList.remove('open');
+}
+
+function setImportFile(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+    showToast('Selecione um arquivo .pdf', true);
+    return;
+  }
+  if (file.size > 20 * 1024 * 1024) {
+    showToast('Arquivo muito grande (limite: 20 MB)', true);
+    return;
+  }
+  importFile = file;
+  document.getElementById('import-file-name').textContent = file.name;
+  document.getElementById('import-file-size').textContent = `(${(file.size / 1024).toFixed(0)} KB)`;
+  document.getElementById('import-file-info').classList.add('show');
+  document.getElementById('import-send-btn').disabled = false;
+  if (!document.getElementById('import-source').value) {
+    document.getElementById('import-source').placeholder = file.name.replace(/\.pdf$/i, '');
+  }
+}
+
+async function sendImportPdf() {
+  if (!importFile) { showToast('Selecione um PDF primeiro.', true); return; }
+  if (!state.apiKey) { showToast('Configure a API Key em ⚙ Configurações.', true); return; }
+
+  const btn = document.getElementById('import-send-btn');
+  btn.disabled = true;
+  document.getElementById('import-btn-label').textContent = 'Enviando…';
+  document.getElementById('import-progress').classList.add('show');
+  const res = document.getElementById('import-result');
+  res.className = 'import-result';
+  res.textContent = '';
+
+  const form = new FormData();
+  form.append('file', importFile);
+  form.append('section', document.getElementById('import-section').value.trim() || 'geral');
+  form.append('source', document.getElementById('import-source').value.trim());
+
+  try {
+    const r = await fetch(`${state.apiUrl}/ingest-pdf`, {
+      method: 'POST',
+      headers: { 'X-API-Key': state.apiKey },
+      body: form,
+    });
+    document.getElementById('import-progress').classList.remove('show');
+
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({ detail: r.statusText }));
+      res.className = 'import-result error show';
+      res.textContent = `⚠️ ${err.detail || r.statusText}`;
+      btn.disabled = false;
+      document.getElementById('import-btn-label').textContent = '📤 Tentar novamente';
+      return;
+    }
+
+    const data = await r.json();
+    res.className = 'import-result success show';
+    res.innerHTML = `✅ <strong>${data.chunks} chunks</strong> criados a partir de ${data.pages} página(s).<br>
+      Fonte: <strong>${escapeHtml(data.source)}</strong> · Seção: <strong>${escapeHtml(data.section)}</strong>`;
+    document.getElementById('import-btn-label').textContent = '📎 Importar outro';
+    btn.disabled = false;
+    importFile = null;
+    document.getElementById('import-file-info').classList.remove('show');
+
+  } catch (e) {
+    document.getElementById('import-progress').classList.remove('show');
+    res.className = 'import-result error show';
+    res.textContent = `⚠️ Falha na conexão: ${e.message}`;
+    btn.disabled = false;
+    document.getElementById('import-btn-label').textContent = '📤 Tentar novamente';
+  }
+}
+
 /* ─── Event listeners ───────────────────────────────────────────── */
 document.getElementById('send-btn').addEventListener('click', sendMessage);
 
@@ -1018,8 +1226,31 @@ document.getElementById('pdf-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('pdf-modal')) closePdfModal();
 });
 
+// Import PDF
+document.getElementById('import-pdf-btn').addEventListener('click', openImportModal);
+document.getElementById('import-cancel-btn').addEventListener('click', closeImportModal);
+document.getElementById('import-send-btn').addEventListener('click', sendImportPdf);
+
+document.getElementById('import-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('import-modal')) closeImportModal();
+});
+
+const dropZone = document.getElementById('import-drop-zone');
+dropZone.addEventListener('click', () => document.getElementById('import-file-input').click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) setImportFile(file);
+});
+document.getElementById('import-file-input').addEventListener('change', e => {
+  if (e.target.files[0]) setImportFile(e.target.files[0]);
+});
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closePdfModal(); closeSettings(); }
+  if (e.key === 'Escape') { closePdfModal(); closeImportModal(); closeSettings(); }
 });
 
 /* ─── Init ──────────────────────────────────────────────────────── */
