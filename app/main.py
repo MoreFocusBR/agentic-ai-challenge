@@ -1,15 +1,45 @@
+import uuid
+import time
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.routes import router
 from app.database.connection import close_pool
+from app import audit
+
+
+class AuditMiddleware(BaseHTTPMiddleware):
+    """Gera um trace_id por requisição e registra entrada/saída HTTP."""
+
+    async def dispatch(self, request: Request, call_next):
+        trace_id = uuid.uuid4().hex[:12]
+        audit.set_trace(trace_id)
+
+        ip = request.client.host if request.client else "-"
+        start = time.monotonic()
+        audit.log("http.request", method=request.method, path=request.url.path, ip=ip)
+
+        response = await call_next(request)
+
+        audit.log(
+            "http.response",
+            method=request.method,
+            path=request.url.path,
+            status=response.status_code,
+            duration_ms=audit.ms(start),
+        )
+        return response
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    audit.log("app.startup", version="1.0.0")
     yield
+    audit.log("app.shutdown")
     await close_pool()
 
 
@@ -20,6 +50,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(AuditMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

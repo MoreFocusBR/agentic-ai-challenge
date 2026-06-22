@@ -2,23 +2,30 @@
 Ingestão programática de documentos para a base de conhecimento.
 Demonstra chunking + embeddings + indexação no pgvector.
 """
-import uuid
 import json
+import time
+import uuid
+
 from openai import AsyncOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.config import settings
 from app.database.connection import get_pool
+from app import audit
 
 _client = AsyncOpenAI(api_key=settings.openai_api_key)
 
 
 async def ingest_text(text: str, source: str, section: str = "geral") -> int:
     """Faz chunking, gera embeddings e insere no pgvector."""
+    start = time.monotonic()
+    audit.log("rag.ingest.start", source=source, section=section, text_length=len(text))
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=800, chunk_overlap=100, separators=["\n\n", "\n", ". ", " "]
     )
     chunks = splitter.split_text(text)
+    audit.log("rag.ingest.chunked", source=source, chunks=len(chunks), chunk_size=800)
 
     pool = await get_pool()
     inserted = 0
@@ -44,4 +51,12 @@ async def ingest_text(text: str, source: str, section: str = "geral") -> int:
             json.dumps({"source": source, "section": section}),
         )
         inserted += 1
+
+    audit.log(
+        "rag.ingest.complete",
+        source=source,
+        section=section,
+        chunks_inserted=inserted,
+        duration_ms=audit.ms(start),
+    )
     return inserted

@@ -9,7 +9,9 @@ Motivo: o banco já está provisionado para o RAG; reutilizá-lo simplifica a
 infraestrutura e mantém a memória persistente entre reinicializações do servidor.
 """
 import json
+
 from app.database.connection import get_pool
+from app import audit
 
 
 async def load_history(session_id: str, max_pairs: int = 5) -> list[dict]:
@@ -26,13 +28,14 @@ async def load_history(session_id: str, max_pairs: int = 5) -> list[dict]:
         LIMIT $2
         """,
         session_id,
-        max_pairs * 2,  # cada par = 2 linhas (human + ai)
+        max_pairs * 2,
     )
-    # asyncpg retorna JSONB como string — faz o parse explicitamente
     messages = []
     for row in reversed(rows):
         raw = row["message"]
         messages.append(json.loads(raw) if isinstance(raw, str) else raw)
+
+    audit.log("memory.load", session_id=session_id, messages_returned=len(messages))
     return messages
 
 
@@ -47,3 +50,4 @@ async def append_to_history(session_id: str, role: str, content: str) -> None:
         session_id,
         json.dumps({"type": role, "content": content}),
     )
+    audit.log("memory.append", session_id=session_id, role=role, content_len=len(content))

@@ -1,18 +1,18 @@
 import os
-import uuid
 import re
+import time
 import unicodedata
+import uuid
 from datetime import datetime
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.lib.colors import HexColor
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, HRFlowable
-)
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
 
 from app.config import settings
+from app import audit
 
 
 def generate_pdf(title: str, content: str) -> str:
@@ -20,6 +20,9 @@ def generate_pdf(title: str, content: str) -> str:
     Gera um PDF a partir de título e conteúdo estruturado.
     Retorna o nome do arquivo gerado (salvo em documents/).
     """
+    start = time.monotonic()
+    audit.log("pdf.generate.start", title=title[:60], content_len=len(content))
+
     os.makedirs(settings.documents_dir, exist_ok=True)
 
     normalized = unicodedata.normalize("NFKD", title.lower()).encode("ascii", "ignore").decode()
@@ -66,4 +69,12 @@ def generate_pdf(title: str, content: str) -> str:
     ))
 
     doc.build(elements)
+
+    size_bytes = os.path.getsize(filepath)
+    audit.log(
+        "pdf.generate.complete",
+        filename=filename,
+        size_bytes=size_bytes,
+        duration_ms=audit.ms(start),
+    )
     return filename

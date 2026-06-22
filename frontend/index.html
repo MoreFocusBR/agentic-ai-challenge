@@ -680,7 +680,7 @@
     </div>
     <div class="modal-result" id="pdf-result">
       ✅ PDF gerado com sucesso!
-      <a id="pdf-download-link" href="#" target="_blank"> Baixar PDF</a>
+      <button id="pdf-download-link" class="pdf-link" style="background:none;border:none;padding:0;cursor:pointer;font:inherit;color:var(--success);font-weight:600"> Baixar PDF</button>
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" id="pdf-cancel-btn">Cancelar</button>
@@ -926,22 +926,18 @@ function appendBotMsg(text, sources, pdfUrl, isN8n) {
 
   let pdfHtml = '';
   if (pdfUrl) {
+    const encodedUrl = encodeURIComponent(pdfUrl);
+    const encodedName = encodeURIComponent(pdfUrl.split('/').pop() || 'documento.pdf');
     pdfHtml = `<div class="pdf-row">
-      <a class="pdf-link" href="${escapeHtml(state.apiUrl + pdfUrl)}" target="_blank">📥 Baixar PDF</a>
+      <button class="pdf-link" style="background:none;border:none;padding:0;cursor:pointer;font:inherit;color:var(--success);font-weight:600;display:flex;align-items:center;gap:4px"
+        onclick="downloadPdf('${encodedUrl}', '${encodedName}')">📥 Baixar PDF</button>
     </div>`;
   }
-
-  // PDF generate button only on FastAPI tab
-  const pdfBtn = isN8n ? '' : `
-    <div class="pdf-row" style="margin-top:${sourcesHtml ? '0' : '10px'}">
-      <button class="btn-pdf" data-text="${escapeHtml(text)}" onclick="openPdfModal(this)">📄 Gerar PDF</button>
-    </div>`;
 
   row.innerHTML = `
     <div class="bubble${isN8n ? ' n8n-bubble' : ''}">
       <div class="msg-text">${formatText(text)}</div>
       ${sourcesHtml}
-      ${pdfBtn}
       ${pdfUrl ? pdfHtml : ''}
     </div>`;
 
@@ -1096,8 +1092,8 @@ async function generatePdf() {
 
     const data = await res.json();
     const link = document.getElementById('pdf-download-link');
-    link.href = `${state.apiUrl}${data.pdf_url}`;
     link.textContent = ` Baixar — ${data.filename}`;
+    link.onclick = () => downloadPdf(data.pdf_url, data.filename);
     document.getElementById('pdf-result').classList.add('show');
     document.getElementById('pdf-btn-label').textContent = 'Gerar outro';
     btn.disabled = false;
@@ -1106,6 +1102,39 @@ async function generatePdf() {
     showToast('Falha na conexão com a API.', true);
     btn.disabled = false;
     document.getElementById('pdf-btn-label').textContent = 'Gerar PDF';
+  }
+}
+
+/* ─── PDF Download (autenticado via Blob URL) ───────────────────── */
+async function downloadPdf(pdfPath, filename) {
+  if (!state.apiKey) {
+    showToast('Configure a API Key em ⚙ Configurações.', true);
+    return;
+  }
+  // pdfPath pode vir URL-encoded (do onclick inline) ou já decodificado
+  const path = decodeURIComponent(pdfPath);
+  const name = decodeURIComponent(filename);
+  showToast('Preparando download…');
+  try {
+    const res = await fetch(`${state.apiUrl}${path}`, {
+      headers: { 'X-API-Key': state.apiKey },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      showToast(`Erro ao baixar: ${err.detail || res.statusText}`, true);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch (e) {
+    showToast('Falha ao baixar o PDF.', true);
   }
 }
 
