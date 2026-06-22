@@ -12,6 +12,10 @@
       --primary-dark:  #122840;
       --primary-light: #2a5a8c;
       --accent:        #3b82f6;
+      --n8n:           #ea580c;
+      --n8n-dark:      #c2410c;
+      --n8n-light:     #fff7ed;
+      --n8n-border:    #fed7aa;
       --bg:            #f0f4f8;
       --surface:       #ffffff;
       --user-bg:       #1a3a5c;
@@ -38,7 +42,7 @@
       overflow: hidden;
     }
 
-    /* ── Header ─────────────────────────────────────────── */
+    /* ── Header ───────────────────────────────────────────────── */
     header {
       background: var(--primary);
       color: #fff;
@@ -89,7 +93,53 @@
     }
     .btn-icon:hover { background: rgba(255,255,255,.22); }
 
-    /* ── Settings panel ──────────────────────────────────── */
+    /* ── Tab bar ──────────────────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      padding: 0 20px;
+      flex-shrink: 0;
+      gap: 4px;
+    }
+
+    .tab {
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .tab:hover:not(.active) { color: var(--bot-text); }
+
+    .tab.active.tab-python {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .tab.active.tab-n8n {
+      color: var(--n8n);
+      border-bottom-color: var(--n8n);
+    }
+
+    .tab-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+      letter-spacing: .03em;
+    }
+    .tab-python .tab-badge { background: #eff6ff; color: var(--accent); }
+    .tab-n8n   .tab-badge { background: #fff7ed; color: var(--n8n); }
+
+    /* ── Settings panel ───────────────────────────────────────── */
     #settings-panel {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -107,11 +157,12 @@
 
     .settings-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr auto;
       gap: 10px;
       align-items: end;
       max-width: 900px;
     }
+    #cfg-python { grid-template-columns: 1fr 1fr 1fr auto; }
+    #cfg-n8n    { grid-template-columns: 2fr 1fr auto; }
 
     .field label {
       display: block;
@@ -149,9 +200,11 @@
       white-space: nowrap;
     }
     .btn-save:hover { background: var(--primary-dark); }
+    .btn-save.n8n   { background: var(--n8n); }
+    .btn-save.n8n:hover { background: var(--n8n-dark); }
 
-    /* ── Chat area ───────────────────────────────────────── */
-    #chat-container {
+    /* ── Chat panes ───────────────────────────────────────────── */
+    .chat-pane {
       flex: 1;
       overflow-y: auto;
       padding: 24px 20px;
@@ -160,13 +213,14 @@
       gap: 16px;
       scroll-behavior: smooth;
     }
+    .chat-pane.hidden { display: none; }
 
     .msg-row {
       display: flex;
       animation: fadeUp .22s ease;
     }
-    .msg-row.user  { justify-content: flex-end; }
-    .msg-row.bot   { justify-content: flex-start; }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.bot  { justify-content: flex-start; }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(8px); }
@@ -188,16 +242,16 @@
       color: var(--user-text);
       border-bottom-right-radius: 4px;
     }
-
     .msg-row.bot .bubble {
       background: var(--bot-bg);
       color: var(--bot-text);
       border-bottom-left-radius: 4px;
     }
 
-    .bubble p + p { margin-top: 8px; }
+    /* N8N bot bubble accent */
+    .n8n-bubble { border-left: 3px solid var(--n8n) !important; }
 
-    /* ── Typing indicator ────────────────────────────────── */
+    /* ── Typing indicator ─────────────────────────────────────── */
     .typing-bubble {
       background: var(--bot-bg);
       border-radius: var(--radius);
@@ -222,13 +276,12 @@
       40%            { transform: translateY(-6px); }
     }
 
-    /* ── Sources ─────────────────────────────────────────── */
+    /* ── Sources ──────────────────────────────────────────────── */
     .sources {
       margin-top: 10px;
       border-top: 1px solid var(--border);
       padding-top: 8px;
     }
-
     .sources summary {
       font-size: 12px;
       font-weight: 600;
@@ -243,110 +296,57 @@
     .sources summary::-webkit-details-marker { display: none; }
     .sources summary .chevron { transition: transform .18s; display: inline-block; }
     details[open] summary .chevron { transform: rotate(90deg); }
-
-    .source-list {
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-
-    .source-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
+    .source-list { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .source-chip { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
     .source-chip .tag {
-      background: #eff6ff;
-      color: var(--accent);
-      border: 1px solid #bfdbfe;
-      border-radius: 4px;
-      padding: 1px 6px;
-      font-weight: 600;
-      font-size: 11px;
-      white-space: nowrap;
+      background: #eff6ff; color: var(--accent);
+      border: 1px solid #bfdbfe; border-radius: 4px;
+      padding: 1px 6px; font-weight: 600; font-size: 11px; white-space: nowrap;
     }
+    .sim-bar { flex:1; height:4px; background:#e2e8f0; border-radius:2px; overflow:hidden; max-width:60px; }
+    .sim-fill { height:100%; background:var(--accent); border-radius:2px; }
 
-    .sim-bar {
-      flex: 1;
-      height: 4px;
-      background: #e2e8f0;
-      border-radius: 2px;
-      overflow: hidden;
-      max-width: 60px;
-    }
-    .sim-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 2px;
-    }
-
-    /* ── PDF action row ──────────────────────────────────── */
-    .pdf-row {
-      margin-top: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
+    /* ── PDF action row ───────────────────────────────────────── */
+    .pdf-row { margin-top: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .btn-pdf {
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      color: #0369a1;
-      border-radius: var(--radius-sm);
-      padding: 5px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s;
-      display: flex;
-      align-items: center;
-      gap: 5px;
+      background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1;
+      border-radius: var(--radius-sm); padding: 5px 12px; font-size: 12px;
+      font-weight: 600; cursor: pointer; transition: background .15s;
+      display: flex; align-items: center; gap: 5px;
     }
     .btn-pdf:hover { background: #e0f2fe; }
     .btn-pdf:disabled { opacity: .5; cursor: not-allowed; }
-
     .pdf-link {
-      font-size: 12px;
-      color: var(--success);
-      text-decoration: none;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      font-size: 12px; color: var(--success); text-decoration: none;
+      font-weight: 600; display: flex; align-items: center; gap: 4px;
     }
     .pdf-link:hover { text-decoration: underline; }
 
-    /* ── Error toast ─────────────────────────────────────── */
+    /* ── Welcome ──────────────────────────────────────────────── */
+    .welcome {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; flex: 1; gap: 12px; color: var(--muted);
+      text-align: center; padding: 40px 20px;
+    }
+    .welcome .icon { font-size: 48px; }
+    .welcome h2 { font-size: 20px; color: var(--primary); }
+    .welcome h2.n8n { color: var(--n8n); }
+    .welcome p { font-size: 14px; max-width: 420px; line-height: 1.6; }
+
+    /* ── Toast ────────────────────────────────────────────────── */
     #toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
+      position: fixed; bottom: 80px; left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: #1e293b;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: var(--radius);
-      font-size: 13px;
-      box-shadow: var(--shadow-lg);
-      opacity: 0;
-      transition: opacity .2s, transform .2s;
-      z-index: 100;
-      pointer-events: none;
-      max-width: 420px;
-      text-align: center;
+      background: #1e293b; color: #fff; padding: 10px 18px;
+      border-radius: var(--radius); font-size: 13px;
+      box-shadow: var(--shadow-lg); opacity: 0;
+      transition: opacity .2s, transform .2s; z-index: 100;
+      pointer-events: none; max-width: 420px; text-align: center;
     }
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.error { background: var(--error); }
 
-    /* ── Input area ──────────────────────────────────────── */
+    /* ── Input area ───────────────────────────────────────────── */
     #input-area {
       background: var(--surface);
       border-top: 1px solid var(--border);
@@ -354,202 +354,136 @@
       flex-shrink: 0;
     }
 
+    /* tint input area based on active tab */
+    #input-area.n8n-mode { border-top-color: var(--n8n-border); }
+
     .input-row {
-      display: flex;
-      gap: 10px;
-      align-items: flex-end;
-      max-width: 900px;
-      margin: 0 auto;
+      display: flex; gap: 10px; align-items: flex-end;
+      max-width: 900px; margin: 0 auto;
     }
 
     #msg-input {
-      flex: 1;
-      resize: none;
+      flex: 1; resize: none;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 10px 14px;
-      font-size: 14px;
-      font-family: inherit;
-      line-height: 1.5;
-      outline: none;
+      font-size: 14px; font-family: inherit;
+      line-height: 1.5; outline: none;
       transition: border-color .15s;
-      max-height: 120px;
-      overflow-y: auto;
+      max-height: 120px; overflow-y: auto;
     }
     #msg-input:focus { border-color: var(--accent); }
+    #msg-input.n8n-mode:focus { border-color: var(--n8n); }
     #msg-input::placeholder { color: #a0aec0; }
 
     .send-btn {
-      background: var(--primary);
-      color: #fff;
-      border: none;
+      background: var(--primary); color: #fff; border: none;
       border-radius: var(--radius);
-      width: 42px;
-      height: 42px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background .15s, transform .1s;
-      flex-shrink: 0;
+      width: 42px; height: 42px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, transform .1s; flex-shrink: 0;
     }
     .send-btn:hover:not(:disabled) { background: var(--primary-dark); }
     .send-btn:active:not(:disabled) { transform: scale(.94); }
     .send-btn:disabled { opacity: .5; cursor: not-allowed; }
-
+    .send-btn.n8n-mode { background: var(--n8n); }
+    .send-btn.n8n-mode:hover:not(:disabled) { background: var(--n8n-dark); }
     .send-btn svg { width: 18px; height: 18px; }
 
-    /* ── Welcome message ─────────────────────────────────── */
-    .welcome {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      gap: 12px;
-      color: var(--muted);
-      text-align: center;
-      padding: 40px 20px;
-    }
-    .welcome .icon { font-size: 48px; }
-    .welcome h2 { font-size: 20px; color: var(--primary); }
-    .welcome p  { font-size: 14px; max-width: 420px; line-height: 1.6; }
-
-    /* ── PDF Modal ───────────────────────────────────────── */
+    /* ── PDF Modal ────────────────────────────────────────────── */
     #pdf-modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.45);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 200;
+      align-items: center; justify-content: center; padding: 20px;
     }
     #pdf-modal.open { display: flex; }
-
     .modal-card {
-      background: var(--surface);
-      border-radius: var(--radius);
-      padding: 24px;
-      width: 100%;
-      max-width: 540px;
-      box-shadow: var(--shadow-lg);
-      animation: fadeUp .2s ease;
+      background: var(--surface); border-radius: var(--radius);
+      padding: 24px; width: 100%; max-width: 540px;
+      box-shadow: var(--shadow-lg); animation: fadeUp .2s ease;
     }
-
-    .modal-card h3 {
-      font-size: 16px;
-      color: var(--primary);
-      margin-bottom: 16px;
-      font-weight: 700;
-    }
-
+    .modal-card h3 { font-size: 16px; color: var(--primary); margin-bottom: 16px; font-weight: 700; }
     .modal-field { margin-bottom: 12px; }
     .modal-field label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: .05em;
-      margin-bottom: 4px;
+      display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px;
     }
     .modal-field input,
     .modal-field textarea {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 8px 12px;
-      font-size: 13px;
-      font-family: inherit;
-      outline: none;
+      width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none;
       transition: border-color .15s;
     }
     .modal-field input:focus,
     .modal-field textarea:focus { border-color: var(--accent); }
     .modal-field textarea { resize: vertical; min-height: 100px; }
-
-    .modal-actions {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 16px;
-    }
-
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
     .btn-cancel {
-      background: #f1f5f9;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 8px 16px;
-      font-size: 13px;
-      cursor: pointer;
+      background: #f1f5f9; color: var(--muted); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 16px; font-size: 13px; cursor: pointer;
     }
     .btn-cancel:hover { background: #e2e8f0; }
-
     .btn-generate {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 8px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      background: var(--primary); color: #fff; border: none;
+      border-radius: var(--radius-sm); padding: 8px 18px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
     }
     .btn-generate:hover:not(:disabled) { background: var(--primary-dark); }
     .btn-generate:disabled { opacity: .6; cursor: not-allowed; }
-
     .modal-result {
-      margin-top: 14px;
-      padding: 12px;
-      background: #f0fdf4;
-      border: 1px solid #86efac;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      color: var(--success);
-      display: none;
+      margin-top: 14px; padding: 12px;
+      background: #f0fdf4; border: 1px solid #86efac;
+      border-radius: var(--radius-sm); font-size: 13px;
+      color: var(--success); display: none;
     }
     .modal-result.show { display: block; }
     .modal-result a { color: var(--success); font-weight: 600; }
 
-    /* ── Scrollbar ───────────────────────────────────────── */
-    #chat-container::-webkit-scrollbar { width: 6px; }
-    #chat-container::-webkit-scrollbar-track { background: transparent; }
-    #chat-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    /* ── Scrollbar ────────────────────────────────────────────── */
+    .chat-pane::-webkit-scrollbar { width: 6px; }
+    .chat-pane::-webkit-scrollbar-track { background: transparent; }
+    .chat-pane::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 
-    /* ── Responsive ──────────────────────────────────────── */
+    /* ── Responsive ───────────────────────────────────────────── */
     @media (max-width: 600px) {
-      .settings-grid { grid-template-columns: 1fr; }
+      #cfg-python,
+      #cfg-n8n { grid-template-columns: 1fr; }
       .bubble { max-width: 92%; }
+      .tab { padding: 10px 12px; font-size: 12px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Header ──────────────────────────────────────── -->
+<!-- ── Header ─────────────────────────────────────────────────── -->
 <header>
   <div class="header-brand">
     <div class="logo">🤖</div>
     <span>Assistente Corporativo — Implanta</span>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" id="new-session-btn" title="Nova sessão">
-      ↺ Nova sessão
-    </button>
-    <button class="btn-icon" id="settings-btn" title="Configurações">
-      ⚙ Configurações
-    </button>
+    <button class="btn-icon" id="new-session-btn">↺ Nova sessão</button>
+    <button class="btn-icon" id="settings-btn">⚙ Configurações</button>
   </div>
 </header>
 
-<!-- ── Settings panel ──────────────────────────────── -->
+<!-- ── Tab bar ────────────────────────────────────────────────── -->
+<div class="tab-bar">
+  <div class="tab tab-python active" id="tab-python" onclick="switchTab('python')">
+    🐍 Python / FastAPI
+    <span class="tab-badge">RAG + LangGraph</span>
+  </div>
+  <div class="tab tab-n8n" id="tab-n8n" onclick="switchTab('n8n')">
+    ⚡ N8N
+    <span class="tab-badge">Workflow</span>
+  </div>
+</div>
+
+<!-- ── Settings panel ─────────────────────────────────────────── -->
 <div id="settings-panel">
-  <div class="settings-grid">
+  <!-- FastAPI settings -->
+  <div class="settings-grid" id="cfg-python">
     <div class="field">
       <label>URL da API</label>
       <input id="cfg-url" type="url" placeholder="http://localhost:8000" />
@@ -564,25 +498,42 @@
     </div>
     <button class="btn-save" id="save-cfg-btn">Salvar</button>
   </div>
-</div>
-
-<!-- ── Chat messages ────────────────────────────────── -->
-<div id="chat-container">
-  <div class="welcome" id="welcome">
-    <div class="icon">💬</div>
-    <h2>Como posso ajudar?</h2>
-    <p>
-      Sou o assistente virtual da Implanta Soluções. Posso responder dúvidas
-      sobre CRM, Siscaf, Fiscalização, Processos, Sisdoc e todos os outros
-      módulos da plataforma.
-    </p>
-    <p style="font-size:12px;color:#94a3b8">
-      Configure sua API Key em <strong>⚙ Configurações</strong> antes de começar.
-    </p>
+  <!-- N8N settings -->
+  <div class="settings-grid" id="cfg-n8n" style="display:none">
+    <div class="field">
+      <label>Webhook URL</label>
+      <input id="cfg-n8n-url" type="url" placeholder="https://..." />
+    </div>
+    <div class="field">
+      <label>Session ID</label>
+      <input id="cfg-n8n-session" type="text" placeholder="auto-gerado" />
+    </div>
+    <button class="btn-save n8n" id="save-n8n-btn">Salvar</button>
   </div>
 </div>
 
-<!-- ── Input area ───────────────────────────────────── -->
+<!-- ── Chat panes ──────────────────────────────────────────────── -->
+<div class="chat-pane" id="chat-python">
+  <div class="welcome" id="welcome-python">
+    <div class="icon">💬</div>
+    <h2>Como posso ajudar?</h2>
+    <p>Sou o assistente virtual da Implanta Soluções. Posso responder dúvidas
+       sobre CRM, Siscaf, Fiscalização, Processos, Sisdoc e todos os outros módulos.</p>
+    <p style="font-size:12px;color:#94a3b8">Configure sua API Key em <strong>⚙ Configurações</strong> antes de começar.</p>
+  </div>
+</div>
+
+<div class="chat-pane hidden" id="chat-n8n">
+  <div class="welcome" id="welcome-n8n">
+    <div class="icon">⚡</div>
+    <h2 class="n8n">Agente N8N</h2>
+    <p>Esta aba envia mensagens diretamente ao workflow N8N via webhook.<br>
+       A conversa usa o <strong>Postgres Chat Memory</strong> nativo do N8N.</p>
+    <p style="font-size:12px;color:#94a3b8">Webhook: <code id="n8n-url-display" style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px"></code></p>
+  </div>
+</div>
+
+<!-- ── Input area ──────────────────────────────────────────────── -->
 <div id="input-area">
   <div class="input-row">
     <textarea
@@ -600,7 +551,7 @@
   </div>
 </div>
 
-<!-- ── PDF Modal ────────────────────────────────────── -->
+<!-- ── PDF Modal ───────────────────────────────────────────────── -->
 <div id="pdf-modal">
   <div class="modal-card">
     <h3>📄 Gerar documento PDF</h3>
@@ -625,20 +576,25 @@
   </div>
 </div>
 
-<!-- ── Toast ────────────────────────────────────────── -->
+<!-- ── Toast ───────────────────────────────────────────────────── -->
 <div id="toast"></div>
 
 <script>
-/* ─── State ──────────────────────────────────────────────────── */
+/* ─── State ─────────────────────────────────────────────────────── */
 const state = {
-  apiUrl:    '',
-  apiKey:    '',
-  sessionId: '',
-  loading:   false,
-  lastBotText: '',
+  activeTab:     'python',
+  loading:       false,
+  // FastAPI
+  apiUrl:        '',
+  apiKey:        '',
+  sessionId:     '',
+  lastBotText:   '',
+  // N8N
+  n8nUrl:        'https://n8n-hml.portalpredial.com.br/webhook-test/chat',
+  n8nSessionId:  '',
 };
 
-/* ─── Utils ──────────────────────────────────────────────────── */
+/* ─── Utils ─────────────────────────────────────────────────────── */
 function uuid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.random() * 16 | 0;
@@ -647,12 +603,12 @@ function uuid() {
 }
 
 function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function formatText(text) {
-  // Markdown-like: bold, line breaks, code
   return escapeHtml(text)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/`(.+?)`/g, '<code style="background:#f1f5f9;padding:1px 5px;border-radius:3px;font-size:92%">$1</code>')
@@ -667,95 +623,160 @@ function showToast(msg, isError = false) {
   t._timer = setTimeout(() => { t.className = ''; }, 3500);
 }
 
-function scrollBottom() {
-  const c = document.getElementById('chat-container');
-  c.scrollTop = c.scrollHeight;
-}
-
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-/* ─── Settings ───────────────────────────────────────────────── */
-function loadSettings() {
-  state.apiUrl    = localStorage.getItem('apiUrl')    || window.location.origin;
-  state.apiKey    = localStorage.getItem('apiKey')    || '';
-  state.sessionId = localStorage.getItem('sessionId') || uuid();
-
-  document.getElementById('cfg-url').value     = state.apiUrl;
-  document.getElementById('cfg-key').value     = state.apiKey;
-  document.getElementById('cfg-session').value = state.sessionId;
+function scrollBottom() {
+  const pane = activePane();
+  pane.scrollTop = pane.scrollHeight;
 }
 
-function saveSettings() {
+function activePane() {
+  return document.getElementById(state.activeTab === 'python' ? 'chat-python' : 'chat-n8n');
+}
+
+/* ─── Tab switching ─────────────────────────────────────────────── */
+function switchTab(tab) {
+  state.activeTab = tab;
+  const isPython = tab === 'python';
+
+  document.getElementById('tab-python').classList.toggle('active', isPython);
+  document.getElementById('tab-n8n').classList.toggle('active', !isPython);
+
+  document.getElementById('chat-python').classList.toggle('hidden', !isPython);
+  document.getElementById('chat-n8n').classList.toggle('hidden', isPython);
+
+  document.getElementById('cfg-python').style.display = isPython ? 'grid' : 'none';
+  document.getElementById('cfg-n8n').style.display    = isPython ? 'none' : 'grid';
+
+  const input  = document.getElementById('msg-input');
+  const btn    = document.getElementById('send-btn');
+  const area   = document.getElementById('input-area');
+
+  input.placeholder = isPython
+    ? 'Digite sua pergunta sobre os produtos Implanta...'
+    : 'Mensagem para o agente N8N...';
+
+  input.classList.toggle('n8n-mode', !isPython);
+  btn.classList.toggle('n8n-mode', !isPython);
+  area.classList.toggle('n8n-mode', !isPython);
+
+  input.focus();
+}
+
+/* ─── Settings ──────────────────────────────────────────────────── */
+function loadSettings() {
+  state.apiUrl      = localStorage.getItem('apiUrl')       || window.location.origin;
+  state.apiKey      = localStorage.getItem('apiKey')       || '';
+  state.sessionId   = localStorage.getItem('sessionId')    || uuid();
+  state.n8nUrl      = localStorage.getItem('n8nUrl')       || state.n8nUrl;
+  state.n8nSessionId = localStorage.getItem('n8nSessionId') || uuid();
+
+  document.getElementById('cfg-url').value         = state.apiUrl;
+  document.getElementById('cfg-key').value         = state.apiKey;
+  document.getElementById('cfg-session').value     = state.sessionId;
+  document.getElementById('cfg-n8n-url').value     = state.n8nUrl;
+  document.getElementById('cfg-n8n-session').value = state.n8nSessionId;
+
+  const disp = document.getElementById('n8n-url-display');
+  if (disp) disp.textContent = state.n8nUrl;
+}
+
+function savePythonSettings() {
   state.apiUrl    = document.getElementById('cfg-url').value.trim()     || window.location.origin;
   state.apiKey    = document.getElementById('cfg-key').value.trim();
   state.sessionId = document.getElementById('cfg-session').value.trim() || uuid();
-
   localStorage.setItem('apiUrl',    state.apiUrl);
   localStorage.setItem('apiKey',    state.apiKey);
   localStorage.setItem('sessionId', state.sessionId);
-
   closeSettings();
   showToast('Configurações salvas.');
 }
 
-function toggleSettings() {
-  const p = document.getElementById('settings-panel');
-  p.classList.toggle('open');
+function saveN8nSettings() {
+  state.n8nUrl       = document.getElementById('cfg-n8n-url').value.trim()     || state.n8nUrl;
+  state.n8nSessionId = document.getElementById('cfg-n8n-session').value.trim() || uuid();
+  localStorage.setItem('n8nUrl',       state.n8nUrl);
+  localStorage.setItem('n8nSessionId', state.n8nSessionId);
+  const disp = document.getElementById('n8n-url-display');
+  if (disp) disp.textContent = state.n8nUrl;
+  closeSettings();
+  showToast('Configurações N8N salvas.');
 }
 
+function toggleSettings() {
+  document.getElementById('settings-panel').classList.toggle('open');
+}
 function closeSettings() {
   document.getElementById('settings-panel').classList.remove('open');
 }
 
-/* ─── New session ────────────────────────────────────────────── */
+/* ─── New session ───────────────────────────────────────────────── */
 function newSession() {
-  state.sessionId = uuid();
-  state.lastBotText = '';
-  localStorage.setItem('sessionId', state.sessionId);
-  document.getElementById('cfg-session').value = state.sessionId;
-
-  const c = document.getElementById('chat-container');
-  c.innerHTML = '';
-  showWelcome();
+  if (state.activeTab === 'python') {
+    state.sessionId = uuid();
+    state.lastBotText = '';
+    localStorage.setItem('sessionId', state.sessionId);
+    document.getElementById('cfg-session').value = state.sessionId;
+    resetPane('chat-python', 'welcome-python', pythonWelcomeHtml());
+  } else {
+    state.n8nSessionId = uuid();
+    localStorage.setItem('n8nSessionId', state.n8nSessionId);
+    document.getElementById('cfg-n8n-session').value = state.n8nSessionId;
+    resetPane('chat-n8n', 'welcome-n8n', n8nWelcomeHtml());
+  }
   showToast('Nova sessão iniciada.');
 }
 
-/* ─── Welcome screen ─────────────────────────────────────────── */
-function showWelcome() {
-  const c = document.getElementById('chat-container');
-  c.innerHTML = `
-    <div class="welcome" id="welcome">
-      <div class="icon">💬</div>
-      <h2>Como posso ajudar?</h2>
-      <p>Sou o assistente virtual da Implanta Soluções. Faça perguntas sobre
-         CRM, Siscaf, Fiscalização, Processos, Sisdoc e todos os módulos.</p>
-    </div>`;
+function resetPane(paneId, welcomeId, html) {
+  const pane = document.getElementById(paneId);
+  pane.innerHTML = html;
 }
 
-/* ─── Render messages ────────────────────────────────────────── */
+function pythonWelcomeHtml() {
+  return `<div class="welcome" id="welcome-python">
+    <div class="icon">💬</div>
+    <h2>Como posso ajudar?</h2>
+    <p>Sou o assistente virtual da Implanta Soluções. Faça perguntas sobre
+       CRM, Siscaf, Fiscalização, Processos, Sisdoc e todos os módulos.</p>
+  </div>`;
+}
+
+function n8nWelcomeHtml() {
+  return `<div class="welcome" id="welcome-n8n">
+    <div class="icon">⚡</div>
+    <h2 class="n8n">Agente N8N</h2>
+    <p>Esta aba envia mensagens diretamente ao workflow N8N via webhook.</p>
+    <p style="font-size:12px;color:#94a3b8">Webhook: <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px">${escapeHtml(state.n8nUrl)}</code></p>
+  </div>`;
+}
+
+/* ─── Render helpers ────────────────────────────────────────────── */
+function hideWelcome() {
+  const id = state.activeTab === 'python' ? 'welcome-python' : 'welcome-n8n';
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
 function appendUserMsg(text) {
   hideWelcome();
-  const c = document.getElementById('chat-container');
   const row = document.createElement('div');
   row.className = 'msg-row user';
   row.innerHTML = `<div class="bubble">${formatText(text)}</div>`;
-  c.appendChild(row);
+  activePane().appendChild(row);
   scrollBottom();
 }
 
 function appendTyping() {
   hideWelcome();
-  const c = document.getElementById('chat-container');
   const row = document.createElement('div');
   row.className = 'msg-row bot';
   row.id = 'typing-row';
   row.innerHTML = `<div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
-  c.appendChild(row);
+  activePane().appendChild(row);
   scrollBottom();
-  return row;
 }
 
 function removeTyping() {
@@ -763,8 +784,7 @@ function removeTyping() {
   if (el) el.remove();
 }
 
-function appendBotMsg(text, sources, pdfUrl) {
-  const c = document.getElementById('chat-container');
+function appendBotMsg(text, sources, pdfUrl, isN8n) {
   const row = document.createElement('div');
   row.className = 'msg-row bot';
 
@@ -777,7 +797,6 @@ function appendBotMsg(text, sources, pdfUrl) {
         <div class="sim-bar"><div class="sim-fill" style="width:${Math.round((s.similarity||0)*100)}%"></div></div>
         <span style="font-size:11px;color:#94a3b8">${(s.similarity||0).toFixed(3)}</span>
       </div>`).join('');
-
     sourcesHtml = `
       <div class="sources">
         <details>
@@ -793,98 +812,118 @@ function appendBotMsg(text, sources, pdfUrl) {
   let pdfHtml = '';
   if (pdfUrl) {
     pdfHtml = `<div class="pdf-row">
-      <a class="pdf-link" href="${escapeHtml(state.apiUrl + pdfUrl)}"
-         target="_blank">📥 Baixar PDF</a>
+      <a class="pdf-link" href="${escapeHtml(state.apiUrl + pdfUrl)}" target="_blank">📥 Baixar PDF</a>
     </div>`;
   }
 
-  const msgId = 'msg-' + Date.now();
+  // PDF generate button only on FastAPI tab
+  const pdfBtn = isN8n ? '' : `
+    <div class="pdf-row" style="margin-top:${sourcesHtml ? '0' : '10px'}">
+      <button class="btn-pdf" data-text="${escapeHtml(text)}" onclick="openPdfModal(this)">📄 Gerar PDF</button>
+    </div>`;
 
   row.innerHTML = `
-    <div class="bubble" id="${msgId}">
+    <div class="bubble${isN8n ? ' n8n-bubble' : ''}">
       <div class="msg-text">${formatText(text)}</div>
       ${sourcesHtml}
-      <div class="pdf-row" style="margin-top:${sourcesHtml ? '0' : '10px'}">
-        <button class="btn-pdf" data-text="${escapeHtml(text)}" onclick="openPdfModal(this)">
-          📄 Gerar PDF
-        </button>
-      </div>
+      ${pdfBtn}
       ${pdfUrl ? pdfHtml : ''}
     </div>`;
 
-  c.appendChild(row);
+  activePane().appendChild(row);
   scrollBottom();
 }
 
 function appendErrorMsg(msg) {
-  const c = document.getElementById('chat-container');
   const row = document.createElement('div');
   row.className = 'msg-row bot';
   row.innerHTML = `<div class="bubble" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">
     ⚠️ ${escapeHtml(msg)}
   </div>`;
-  c.appendChild(row);
+  activePane().appendChild(row);
   scrollBottom();
 }
 
-function hideWelcome() {
-  const w = document.getElementById('welcome');
-  if (w) w.remove();
-}
-
-/* ─── Send message ───────────────────────────────────────────── */
-async function sendMessage() {
-  const input = document.getElementById('msg-input');
-  const text = input.value.trim();
-  if (!text || state.loading) return;
-
+/* ─── FastAPI send ──────────────────────────────────────────────── */
+async function sendPython(text) {
   if (!state.apiKey) {
     showToast('Configure a API Key em ⚙ Configurações.', true);
     toggleSettings();
     return;
   }
 
+  const res = await fetch(`${state.apiUrl}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': state.apiKey },
+    body: JSON.stringify({ session_id: state.sessionId, message: text }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    const detail = err.detail || res.statusText;
+    if (res.status === 401) throw new Error('API Key inválida. Verifique em ⚙ Configurações.');
+    if (res.status === 400) throw new Error(detail);
+    throw new Error(`Erro ${res.status}: ${detail}`);
+  }
+
+  return res.json(); // { response, sources, pdf_url, session_id }
+}
+
+/* ─── N8N send ──────────────────────────────────────────────────── */
+async function sendN8N(text) {
+  const res = await fetch(state.n8nUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chatInput:  text,
+      sessionId:  state.n8nSessionId,
+      message:    text,     // fallback field name
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => res.statusText);
+    throw new Error(`Webhook retornou ${res.status}: ${body.slice(0, 120)}`);
+  }
+
+  const data = await res.json().catch(() => ({}));
+  // N8N response field varies by workflow config
+  const response =
+    data.output   ||
+    data.response ||
+    data.text     ||
+    data.message  ||
+    data.chatResponse ||
+    (Array.isArray(data) && (data[0]?.output || data[0]?.text || data[0]?.response)) ||
+    JSON.stringify(data);
+
+  return { response: String(response), sources: [], pdf_url: null };
+}
+
+/* ─── Main send ─────────────────────────────────────────────────── */
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text || state.loading) return;
+
   state.loading = true;
   setInputEnabled(false);
-
   appendUserMsg(text);
   input.value = '';
   autoResize(input);
-
   appendTyping();
 
   try {
-    const res = await fetch(`${state.apiUrl}/chat`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': state.apiKey,
-      },
-      body: JSON.stringify({ session_id: state.sessionId, message: text }),
-    });
+    const isN8n = state.activeTab === 'n8n';
+    const data  = isN8n ? await sendN8N(text) : await sendPython(text);
 
     removeTyping();
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      const detail = err.detail || res.statusText;
-      if (res.status === 401) {
-        appendErrorMsg('API Key inválida. Verifique em ⚙ Configurações.');
-      } else if (res.status === 400) {
-        appendErrorMsg(detail);
-      } else {
-        appendErrorMsg(`Erro ${res.status}: ${detail}`);
-      }
-      return;
-    }
-
-    const data = await res.json();
     state.lastBotText = data.response || '';
-    appendBotMsg(data.response, data.sources, data.pdf_url);
+    appendBotMsg(data.response, data.sources, data.pdf_url, isN8n);
 
   } catch (e) {
     removeTyping();
-    appendErrorMsg(`Não foi possível conectar à API. Verifique a URL (${state.apiUrl}) e se o servidor está rodando.`);
+    appendErrorMsg(e.message || 'Não foi possível conectar. Verifique a URL e tente novamente.');
   } finally {
     state.loading = false;
     setInputEnabled(true);
@@ -897,7 +936,7 @@ function setInputEnabled(enabled) {
   document.getElementById('send-btn').disabled  = !enabled;
 }
 
-/* ─── PDF Modal ──────────────────────────────────────────────── */
+/* ─── PDF Modal ─────────────────────────────────────────────────── */
 function openPdfModal(btn) {
   const content = btn ? (btn.dataset.text || state.lastBotText) : state.lastBotText;
   const now = new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -907,7 +946,6 @@ function openPdfModal(btn) {
   document.getElementById('pdf-result').classList.remove('show');
   document.getElementById('pdf-btn-label').textContent = 'Gerar PDF';
   document.getElementById('pdf-generate-btn').disabled = false;
-
   document.getElementById('pdf-modal').classList.add('open');
 }
 
@@ -929,10 +967,7 @@ async function generatePdf() {
   try {
     const res = await fetch(`${state.apiUrl}/generate-pdf`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': state.apiKey,
-      },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': state.apiKey },
       body: JSON.stringify({ title, content }),
     });
 
@@ -945,12 +980,9 @@ async function generatePdf() {
     }
 
     const data = await res.json();
-    const downloadUrl = `${state.apiUrl}${data.pdf_url}`;
-
     const link = document.getElementById('pdf-download-link');
-    link.href = downloadUrl;
+    link.href = `${state.apiUrl}${data.pdf_url}`;
     link.textContent = ` Baixar — ${data.filename}`;
-
     document.getElementById('pdf-result').classList.add('show');
     document.getElementById('pdf-btn-label').textContent = 'Gerar outro';
     btn.disabled = false;
@@ -962,7 +994,7 @@ async function generatePdf() {
   }
 }
 
-/* ─── Event listeners ────────────────────────────────────────── */
+/* ─── Event listeners ───────────────────────────────────────────── */
 document.getElementById('send-btn').addEventListener('click', sendMessage);
 
 document.getElementById('msg-input').addEventListener('keydown', e => {
@@ -974,8 +1006,10 @@ document.getElementById('msg-input').addEventListener('input', function() {
 });
 
 document.getElementById('settings-btn').addEventListener('click', toggleSettings);
-document.getElementById('save-cfg-btn').addEventListener('click', saveSettings);
 document.getElementById('new-session-btn').addEventListener('click', newSession);
+
+document.getElementById('save-cfg-btn').addEventListener('click', savePythonSettings);
+document.getElementById('save-n8n-btn').addEventListener('click', saveN8nSettings);
 
 document.getElementById('pdf-cancel-btn').addEventListener('click', closePdfModal);
 document.getElementById('pdf-generate-btn').addEventListener('click', generatePdf);
@@ -985,13 +1019,10 @@ document.getElementById('pdf-modal').addEventListener('click', e => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    closePdfModal();
-    closeSettings();
-  }
+  if (e.key === 'Escape') { closePdfModal(); closeSettings(); }
 });
 
-/* ─── Init ───────────────────────────────────────────────────── */
+/* ─── Init ──────────────────────────────────────────────────────── */
 loadSettings();
 document.getElementById('msg-input').focus();
 </script>
